@@ -14,5 +14,5 @@ async function extractTextFromPDF(filePath) {
   return data.text || '';
 }
 
-module.exports = { extractText };
+module.exports = { extractTextFromPDF };
 
