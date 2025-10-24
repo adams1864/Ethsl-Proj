@@ -12,7 +12,7 @@ const glossDictionary = {
   a: "",
 };
 
-const stopWords = new Set(["is", "the", "a", "an", "in", "on", "of", "about", "are", "was"]);
+const stopWords = new Set(["is", "the", "a", "an", "in", "on", "of", "about", "are", "was", "this"]);
 
 function glossify(text) {
   return text
