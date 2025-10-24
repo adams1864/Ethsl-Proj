@@ -34,22 +34,21 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 
-router.post("/upload/pdf", upload.single("file"), async (req, res) => {
-  try {
-    const pdfPath = req.file.path;
-    const text = await extractTextFromPDF(pdfPath);
-    res.json({ text });
-  } catch (err) {
-    console.error("PDF extraction error:", err);
-    res.status(500).json({ error: "Failed to extract PDF text" });
-  }
-});
+const asyncHandler = fn => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
 
-router.post("/translate/text", (req, res) => {
+router.post("/upload/pdf", upload.single("file"), asyncHandler(async (req, res) => {
+  const pdfPath = req.file.path;
+  const text = await extractTextFromPDF(pdfPath);
+  res.json({ text });
+}));
+
+router.post("/translate/text", (req, res, next) => {
   const { text } = req.body;
 
   if (!text || typeof text !== "string") {
-    return res.status(400).json({ error: "Missing or invalid 'text'" });
+    return next(new Error("Missing or invalid 'text'"));
   }
 
   const gloss = glossify(text);
@@ -63,18 +62,15 @@ router.post("/translate/text", (req, res) => {
 });
 
 // Full pipeline: upload PDF -> extract text -> glossify -> visualize
-router.post("/translate/pdf", upload.single("file"), async (req, res) => {
-  try {
-    if (!req.file || !req.file.path) return res.status(400).json({ error: "Missing file upload (field name: file)" });
-    const pdfPath = req.file.path;
-    const text = await extractTextFromPDF(pdfPath);
-    const glosses = glossify(text);
-    const icons = visualizeGlosses(glosses);
-    res.json({ glosses, icons });
-  } catch (err) {
-    console.error("Translate pipeline error:", err);
-    res.status(500).json({ error: "Failed to translate PDF" });
+router.post("/translate/pdf", upload.single("file"), asyncHandler(async (req, res) => {
+  if (!req.file || !req.file.path) {
+    throw new Error("Missing file upload (field name: file)");
   }
-});
+  const pdfPath = req.file.path;
+  const text = await extractTextFromPDF(pdfPath);
+  const glosses = glossify(text);
+  const icons = visualizeGlosses(glosses);
+  res.json({ glosses, icons });
+}));
 
 module.exports = router;
